@@ -35,63 +35,95 @@ export function AuthProvider({ children }) {
   const user = auth.user
   const token = auth.token
 
-  const login = useCallback(async ({ email }) => {
-    // Dummy JWT login (UI + state only).
-    await new Promise((r) => setTimeout(r, 650))
+  // 🔐 REAL LOGIN (CONNECTED TO BACKEND)
+  const login = useCallback(async ({ email, password }) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
 
-    // Basic "JWT based auth" simulation.
-    const fakeToken = btoa(`${email}:${Date.now()}`)
-    const role = email.toLowerCase().includes('admin') ? 'admin' : 'customer'
+      const data = await res.json()
 
-    const nextUser = {
-      id: `u_${email.replace(/[^a-z0-9]/gi, '').slice(0, 12)}`,
-      name: email.split('@')[0].slice(0, 1).toUpperCase() + email.split('@')[0].slice(1),
-      email,
-      role,
-      createdAt: new Date().toISOString(),
-      profile: {
-        phone: '',
-        addressLine1: '',
-        city: '',
-        postalCode: '',
-      },
+      if (!res.ok) {
+        throw new Error(data.message || 'Login failed')
+      }
+
+      const nextUser = {
+        id: data._id,
+        name: data.name,
+        email: data.email,
+        role: data.email.toLowerCase().includes('admin') ? 'admin' : 'customer',
+        createdAt: new Date().toISOString(),
+        profile: {
+          phone: '',
+          addressLine1: '',
+          city: '',
+          postalCode: '',
+        },
+      }
+
+      const nextAuth = {
+        token: data.token,
+        user: nextUser,
+      }
+
+      setAuth(nextAuth)
+      persistAuth(nextAuth)
+
+      return nextAuth
+    } catch (error) {
+      throw error
     }
-
-    const nextAuth = { token: fakeToken, user: nextUser }
-    setAuth(nextAuth)
-    persistAuth(nextAuth)
-    return nextAuth
   }, [])
 
-  const register = useCallback(async ({ name, email }) => {
-    await new Promise((r) => setTimeout(r, 750))
+  // 🔐 REGISTER (CONNECTED TO BACKEND)
+  const register = useCallback(async ({ name, email, password }) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      })
 
-    const fakeToken = btoa(`${email}:${Date.now()}`)
-    const nextUser = {
-      id: `u_${Date.now()}`,
-      name,
-      email,
-      role: 'customer',
-      createdAt: new Date().toISOString(),
-      profile: {
-        phone: '',
-        addressLine1: '',
-        city: '',
-        postalCode: '',
-      },
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Registration failed')
+      }
+
+      const nextUser = {
+        id: data._id,
+        name: data.name,
+        email: data.email,
+        role: 'customer',
+        createdAt: new Date().toISOString(),
+        profile: {
+          phone: '',
+          addressLine1: '',
+          city: '',
+          postalCode: '',
+        },
+      }
+
+      const nextAuth = {
+        token: data.token,
+        user: nextUser,
+      }
+
+      setAuth(nextAuth)
+      persistAuth(nextAuth)
+
+      return nextAuth
+    } catch (error) {
+      throw error
     }
-
-    const nextAuth = { token: fakeToken, user: nextUser }
-    setAuth(nextAuth)
-    persistAuth(nextAuth)
-    return nextAuth
   }, [])
-
-  const socialLogin = useCallback(async ({ provider }) => {
-    await new Promise((r) => setTimeout(r, 650))
-    const email = `${provider.toLowerCase()}_user@smartshop.demo`
-    return login({ email })
-  }, [login])
 
   const logout = useCallback(() => {
     setAuth({ token: null, user: null })
@@ -121,11 +153,10 @@ export function AuthProvider({ children }) {
       isAdmin: user?.role === 'admin',
       login,
       register,
-      socialLogin,
       logout,
       updateProfile,
     }),
-    [token, user, login, register, socialLogin, logout, updateProfile]
+    [token, user, login, register, logout, updateProfile]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -136,4 +167,3 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider')
   return ctx
 }
-

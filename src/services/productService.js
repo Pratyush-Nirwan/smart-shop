@@ -1,9 +1,6 @@
-import products from '../assets/data/products.json'
+const BASE_URL = 'http://localhost:5000/api/products'
 
-function wait(ms) {
-  return new Promise((r) => setTimeout(r, ms))
-}
-
+// 🔥 GET PRODUCTS (with filters + pagination)
 export async function listProducts({
   query = '',
   category = 'All',
@@ -13,47 +10,57 @@ export async function listProducts({
   page = 1,
   pageSize = 9,
 } = {}) {
-  await wait(550)
+  try {
+    const params = new URLSearchParams()
 
-  const q = query.trim().toLowerCase()
+    if (query) params.append('query', query)
+    if (category !== 'All') params.append('category', category)
+    if (minPrice != null && minPrice !== '') params.append('minPrice', minPrice)
+    if (maxPrice != null && maxPrice !== '') params.append('maxPrice', maxPrice)
+    if (minRating != null && minRating !== 0) params.append('minRating', minRating)
 
-  const filtered = products.filter((p) => {
-    const matchesQuery =
-      !q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
-    const matchesCategory = category === 'All' || p.category === category
-    const matchesMinPrice = minPrice == null || p.price >= Number(minPrice)
-    const matchesMaxPrice = maxPrice == null || p.price <= Number(maxPrice)
-    const matchesRating = minRating == null || p.rating >= Number(minRating)
-    return matchesQuery && matchesCategory && matchesMinPrice && matchesMaxPrice && matchesRating
-  })
+    params.append('page', page)
+    params.append('pageSize', pageSize)
 
-  const total = filtered.length
-  const start = (page - 1) * pageSize
-  const end = start + pageSize
-  const items = filtered.slice(start, end)
+    const res = await fetch(`${BASE_URL}?${params.toString()}`)
+    const data = await res.json()
 
-  return {
-    items,
-    total,
-    page,
-    pageSize,
-    hasMore: end < total,
+    return data
+  } catch (error) {
+    console.error('Fetch products error:', error)
+    return {
+      items: [],
+      total: 0,
+      hasMore: false,
+    }
   }
 }
 
+// 🔥 GET SINGLE PRODUCT
 export async function getProductById(id) {
-  await wait(450)
-  const product = products.find((p) => p.id === id)
-  if (!product) throw new Error('Product not found')
-  return product
+  try {
+    const res = await fetch(`${BASE_URL}/${id}`)
+    const data = await res.json()
+    return data
+  } catch (error) {
+    console.error('Fetch product error:', error)
+    throw error
+  }
 }
 
+// 🔥 GET FEATURED PRODUCTS
 export async function getFeaturedProducts(limit = 8) {
-  await wait(300)
-  return products.filter((p) => p.featured).slice(0, limit)
+  try {
+    const res = await fetch(`${BASE_URL}/featured?limit=${limit}`)
+    const data = await res.json()
+    return data
+  } catch (error) {
+    console.error('Fetch featured products error:', error)
+    return []
+  }
 }
 
+// 🔥 TEMP CATEGORY LIST (until backend)
 export function getAllCategories() {
-  return ['All', ...Array.from(new Set(products.map((p) => p.category))).sort()]
+  return ['All', 'Electronics', 'Clothing', 'Books', 'Home']
 }
-
