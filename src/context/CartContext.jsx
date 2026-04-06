@@ -1,5 +1,5 @@
 /* eslint react-refresh/only-export-components: off */
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo, useState, useEffect } from 'react'
 
 const CartContext = createContext(null)
 
@@ -53,10 +53,73 @@ export function CartProvider({ children }) {
   const wishlist = state.wishlist
   const couponCode = state.couponCode
 
-  const addToCart = useCallback((product, { color, size } = {}, quantity = 1) => {
-    const cartKey = `${product.id}:${color ?? 'default'}:${size ?? 'default'}`
+  // 🔥 GET TOKEN FROM AUTH
+  const token = JSON.parse(localStorage.getItem('smartshop_auth_v1'))?.token
+
+  // 🔥 FETCH CART FROM BACKEND
+  useEffect(() => {
+    async function fetchCart() {
+      if (!token) return
+
+      try {
+        const res = await fetch('http://localhost:5000/api/cart', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        const data = await res.json()
+
+        if (data?.items) {
+          const mappedItems = data.items.map((item) => ({
+            cartKey: item.product._id,
+            productId: item.product._id,
+            name: item.product.name,
+            price: item.product.price,
+            image: item.product.images?.[0] ?? '',
+            quantity: item.quantity,
+            variant: {},
+          }))
+
+          setState((prev) => {
+            const next = { ...prev, items: mappedItems }
+            persistCart(next)
+            return next
+          })
+        }
+      } catch (err) {
+        console.log('Fetch cart error:', err)
+      }
+    }
+
+    fetchCart()
+  }, [token])
+
+  // 🔥 ADD TO CART (UPDATED)
+  const addToCart = useCallback(async (product, { color, size } = {}, quantity = 1) => {
+    const cartKey = `${product._id || product.id}:${color ?? 'default'}:${size ?? 'default'}`
     const qty = Math.max(1, Number(quantity) || 1)
 
+    // 🔥 BACKEND CALL
+    if (token) {
+      try {
+        await fetch('http://localhost:5000/api/cart/add', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            productId: product._id || product.id,
+            quantity: qty,
+          }),
+        })
+      } catch (err) {
+        console.log('Backend cart error:', err)
+      }
+    }
+
+    // ✅ ORIGINAL LOCAL LOGIC (UNCHANGED)
     setState((prev) => {
       const existing = prev.items.find((it) => it.cartKey === cartKey)
       const maxQty = typeof product.inventory === 'number' ? product.inventory : 99
@@ -77,7 +140,7 @@ export function CartProvider({ children }) {
           ...prev.items,
           {
             cartKey,
-            productId: product.id,
+            productId: product._id || product.id,
             name: product.name,
             price: product.price,
             image: product.images?.[0] ?? '',
@@ -89,7 +152,7 @@ export function CartProvider({ children }) {
       persistCart(next)
       return next
     })
-  }, [])
+  }, [token])
 
   const updateQuantity = useCallback((cartKey, nextQty) => {
     const qty = Math.max(0, Number(nextQty) || 0)
@@ -181,4 +244,3 @@ export function useCart() {
   if (!ctx) throw new Error('useCart must be used inside CartProvider')
   return ctx
 }
-

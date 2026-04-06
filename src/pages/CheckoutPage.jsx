@@ -274,4 +274,4 @@ export default function CheckoutPage() {
     </div>
   )
 }
-
+//connect the checkout page to orders, replace the submit logic

@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import productsSeed from '../assets/data/products.json'
 import { useToast } from '../context/ToastContext'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import RatingStars from '../components/product/RatingStars'
+import axios from 'axios'
+import { useEffect } from 'react'
 
 const CATEGORY_OPTIONS = ['All', ...Array.from(new Set(productsSeed.map((p) => p.category)))].filter(
   (c) => c !== 'All'
@@ -23,7 +24,7 @@ function clamp(n, min, max) {
 export default function AdminDashboardPage({ section = 'all' }) {
   const { pushToast } = useToast()
 
-  const [adminProducts, setAdminProducts] = useState(() => productsSeed)
+  const [adminProducts, setAdminProducts] = useState([])
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
@@ -36,6 +37,19 @@ export default function AdminDashboardPage({ section = 'all' }) {
     inventory: '',
     imageUrl: '',
   })
+
+  useEffect(() => {
+  async function fetchProducts() {
+    try {
+      const res = await axios.get('http://localhost:5000/api/products')
+      setAdminProducts(res.data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  fetchProducts()
+}, [])
 
   const productsCount = adminProducts.length
 
@@ -74,7 +88,7 @@ export default function AdminDashboardPage({ section = 'all' }) {
   }
 
   function openEdit(product) {
-    setEditingId(product.id)
+    setEditingId(product._id)
     setDraft({
       name: product.name ?? '',
       category: product.category ?? CATEGORY_OPTIONS[0] ?? 'Electronics',
@@ -91,73 +105,63 @@ export default function AdminDashboardPage({ section = 'all' }) {
     setEditingId(null)
   }
 
-  function onSave() {
-    const price = Number(draft.price)
-    const rating = clamp(Number(draft.rating), 0, 5)
-    const inventory = Math.max(0, Math.floor(Number(draft.inventory)))
+  async function onSave() {
+  const price = Number(draft.price)
+  const rating = clamp(Number(draft.rating), 0, 5)
+  const inventory = Math.max(0, Math.floor(Number(draft.inventory)))
 
-    if (!draft.name.trim()) {
-      pushToast({ title: 'Missing name', type: 'error', message: 'Product name is required.' })
-      return
-    }
-    if (Number.isNaN(price) || price <= 0) {
-      pushToast({ title: 'Invalid price', type: 'error', message: 'Enter a valid price.' })
-      return
-    }
+  if (!draft.name.trim()) {
+    pushToast({ title: 'Missing name', type: 'error' })
+    return
+  }
 
+  try {
+    // 🟡 CASE 1: UPDATE PRODUCT
     if (editingId) {
-      setAdminProducts((prev) =>
-        prev.map((p) =>
-          p.id === editingId
-            ? {
-                ...p,
-                name: draft.name.trim(),
-                category: draft.category,
-                price,
-                rating,
-                inventory,
-                images: draft.imageUrl ? [draft.imageUrl] : p.images,
-              }
-            : p
-        )
-      )
-      pushToast({ title: 'Product updated', message: draft.name.trim(), type: 'success' })
-    } else {
-      const id = `ss-${Math.floor(7000 + Math.random() * 2000)}`
-      setAdminProducts((prev) => [
-        {
-          id,
-          name: draft.name.trim(),
-          category: draft.category,
-          price,
-          rating,
-          inventory,
-          featured: false,
-          description: 'New product added in Admin UI (demo).',
-          images: draft.imageUrl ? [draft.imageUrl] : ['https://placehold.co/1200x1200/png?text=SmartShop'],
-          variants: { colors: ['Default'], sizes: [] },
-          reviews: [],
-        },
-        ...prev,
-      ])
-      pushToast({ title: 'Product added', message: draft.name.trim(), type: 'success' })
+      await axios.put(`http://localhost:5000/api/products/${editingId}`, {
+        name: draft.name,
+        category: draft.category,
+        price,
+        rating,
+        inventory,
+        images: [draft.imageUrl],
+      })
     }
+
+    // 🟢 CASE 2: ADD NEW PRODUCT
+    else {
+      await axios.post(`http://localhost:5000/api/products`, {
+        name: draft.name,
+        category: draft.category,
+        price,
+        rating,
+        inventory,
+        images: [draft.imageUrl],
+      })
+    }
+
+    // 🔄 REFRESH DATA FROM BACKEND
+    const res = await axios.get('http://localhost:5000/api/products')
+    setAdminProducts(res.data)
+
+    pushToast({ title: 'Success', type: 'success' })
     closeModal()
+  } catch (err) {
+    console.error(err)
+    pushToast({ title: 'Error', message: 'Operation failed', type: 'error' })
   }
+}
 
-  function onDelete(productId) {
-    setAdminProducts((prev) => prev.filter((p) => p.id !== productId))
-    pushToast({ title: 'Product deleted', type: 'info', message: 'Removed from UI list.' })
+  async function onDelete(productId) {
+  try {
+    await axios.delete(`http://localhost:5000/api/products/${productId}`)
+    setAdminProducts((prev) => prev.filter((p) => p._id !== productId))
+  } catch (err) {
+    console.error(err)
   }
+}
 
-  const orders = useMemo(() => {
-    return [
-      { id: 'ORD-10293', customer: 'Aarav', total: 189.5, status: 'Delivered', placedAt: '2026-02-14' },
-      { id: 'ORD-10871', customer: 'Maya', total: 79.99, status: 'Processing', placedAt: '2026-03-01' },
-      { id: 'ORD-11102', customer: 'Priya', total: 54.0, status: 'Delivered', placedAt: '2026-03-12' },
-      { id: 'ORD-11488', customer: 'Ken', total: 129.5, status: 'Shipped', placedAt: '2026-03-20' },
-    ]
-  }, [])
+  const orders = useMemo([])
 
   return (
     <div className="p-2">
@@ -229,7 +233,7 @@ export default function AdminDashboardPage({ section = 'all' }) {
               </thead>
               <tbody>
                 {filteredProducts.map((p) => (
-                  <tr key={p.id} className="border-t border-white/10">
+                  <tr key={p._id} className="border-t border-white/10">
                     <td className="py-3 px-3">
                       <div className="font-extrabold text-white">{p.name}</div>
                       <div className="text-xs text-slate-400">{p.id}</div>
@@ -248,7 +252,7 @@ export default function AdminDashboardPage({ section = 'all' }) {
                         <Button variant="secondary" size="sm" onClick={() => openEdit(p)}>
                           Edit
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => onDelete(p.id)}>
+                        <Button variant="ghost" size="sm" onClick={() => onDelete(p._id)}>
                           Delete
                         </Button>
                       </div>

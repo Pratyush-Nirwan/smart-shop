@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import ProductCard from '../components/product/ProductCard'
@@ -20,26 +20,43 @@ function formatDate(iso) {
 
 export default function ProfilePage() {
   const navigate = useNavigate()
-  const { user, updateProfile, logout } = useAuth()
+  const { user, updateProfile, logout, isAuthenticated } = useAuth()
   const { addToCart, toggleWishlist, wishlist } = useCart()
   const { pushToast } = useToast()
 
-  const [tab, setTab] = useState('Profile')
+ if (!isAuthenticated) {
+  navigate('/login')
+  return null
+}
 
   const wishlistProducts = useMemo(() => {
     const ids = new Set(wishlist)
     return products.filter((p) => ids.has(p.id)).slice(0, 8)
   }, [wishlist])
 
-  const orders = useMemo(() => {
-    // Dummy orders - in a real app this would come from an API.
-    return [
-      { id: 'ORD-10293', total: 189.5, status: 'Delivered', placedAt: '2026-02-14' },
-      { id: 'ORD-10871', total: 79.99, status: 'Processing', placedAt: '2026-03-01' },
-      { id: 'ORD-11102', total: 54.0, status: 'Delivered', placedAt: '2026-03-12' },
-    ]
-  }, [])
+  const [orders, setOrders] = useState([])
 
+  useEffect(() => {
+  async function fetchOrders() {
+    try {
+      const token = JSON.parse(localStorage.getItem('smartshop_auth_v1'))?.token
+
+      const res = await fetch('http://localhost:5000/api/orders/my', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await res.json()
+      setOrders(data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  fetchOrders()
+}, [])
+    
   const profile = user?.profile ?? {}
 
   const [draft, setDraft] = useState({
@@ -59,9 +76,9 @@ export default function ProfilePage() {
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-white">Dashboard</h1>
-          <p className="mt-2 text-sm text-slate-300">
-            Manage your profile, orders, wishlist, and addresses.
-          </p>
+         <p className="text-xs text-green-400">
+  Logged in with JWT
+</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -160,17 +177,21 @@ export default function ProfilePage() {
                   <div key={o.id} className="rounded-2xl border border-white/10 bg-slate-950/20 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm font-extrabold text-white">{o.id}</p>
-                        <p className="mt-1 text-xs text-slate-400">Placed: {formatDate(o.placedAt)}</p>
+                       <p className="text-sm font-extrabold text-white">{o._id}</p>
+<p className="mt-1 text-xs text-slate-400">
+  Placed: {formatDate(o.createdAt)}
+</p>
                       </div>
-                      <p className="text-sm font-extrabold text-white">${o.total.toFixed(2)}</p>
+                     <p className="text-sm font-extrabold text-white">
+  ${o.totals?.total?.toFixed(2)}
+</p>
                     </div>
                     <p className="mt-3 text-xs font-bold text-slate-300">
-                      Status:{' '}
-                      <span className="text-brand-300">
-                        {o.status}
-                      </span>
-                    </p>
+  Status:{' '}
+  <span className="text-brand-300">
+    {o.status}
+  </span>
+</p>
                   </div>
                 ))}
               </div>
@@ -227,4 +248,4 @@ export default function ProfilePage() {
     </div>
   )
 }
-
+// replace dummy orders with api

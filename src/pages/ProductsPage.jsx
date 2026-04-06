@@ -15,7 +15,15 @@ export default function ProductsPage() {
 
   const [searchParams] = useSearchParams()
 
-  const categories = useMemo(() => getAllCategories(), [])
+ const [categories, setCategories] = useState([])
+
+useEffect(() => {
+  async function loadCategories() {
+    const cats = await getAllCategories()
+    setCategories(cats)
+  }
+  loadCategories()
+}, [])
 
   const initialQuery = searchParams.get('query') ?? ''
   const initialCategory = searchParams.get('category') ?? 'All'
