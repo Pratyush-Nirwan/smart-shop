@@ -1,14 +1,22 @@
-function wait(ms) {
-  return new Promise((r) => setTimeout(r, ms))
+import { api } from './http.js'
+
+export async function createRazorpayOrder({ orderInput, token }) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const response = await api.post('/orders/razorpay/order', { orderInput }, { headers })
+  return response.data
 }
 
-export async function placeOrder({ orderInput }) {
-  await wait(850)
-  return {
-    orderId: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
-    status: 'placed',
-    placedAt: new Date().toISOString(),
-    ...orderInput,
-  }
+export async function verifyRazorpayPayment({ paymentId, orderId, signature, orderInput, token }) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const response = await api.post(
+    '/orders/razorpay/verify',
+    { paymentId, orderId, signature, orderInput },
+    { headers }
+  )
+  return response.data
 }
 

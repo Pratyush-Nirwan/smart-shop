@@ -1,9 +1,8 @@
 import express from 'express'
 import Product from '../models/Product.js'
-import productsData from '/data/products.js'
+import productsData from '../Data/products.js'
 import { protect } from '../middleware/authMiddleware.js'
 import { admin } from '../middleware/adminMiddleware.js'
-import Product from '../models/Product.js'
 
 import {
   getProducts,

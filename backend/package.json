@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "type": "module",
- "scripts": {
-  "start": "nodemon server.js"
+  "scripts": {
+    "start": "nodemon server.js",
+    "seed:products": "node scripts/seedProducts.js",
+    "seed:products:append": "node scripts/seedProducts.js append"
   },
   "keywords": [],
   "author": "",
@@ -16,10 +18,10 @@
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.4.1"
+    "mongoose": "^9.4.1",
+    "razorpay": "^2.3.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
   }
-  
 }

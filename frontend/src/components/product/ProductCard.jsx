@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import Button from '../ui/Button'
 import RatingStars from './RatingStars'
 import { IconHeart } from '../common/Icons'
+import { formatInr } from '../../utils/currency'
 
 export default function ProductCard({ product, onAddToCart, onToggleWishlist, wishlisted, loading = false }) {
   if (loading) {
@@ -54,7 +55,7 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist, wi
         </Link>
 
         <div className="mt-2 flex items-center justify-between">
-          <div className="text-lg font-extrabold text-white">${product.price.toFixed(2)}</div>
+          <div className="text-lg font-extrabold text-white">{formatInr(product.price)}</div>
           <RatingStars rating={product.rating} />
         </div>
 

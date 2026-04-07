@@ -1,5 +1,12 @@
 /* eslint react-refresh/only-export-components: off */
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import {
+  authenticateWithGoogle,
+  login as loginRequest,
+  register as registerRequest,
+  requestPhoneOtp as requestPhoneOtpRequest,
+  verifyPhoneOtp as verifyPhoneOtpRequest,
+} from '../services/authService'
 
 const AuthContext = createContext(null)
 
@@ -29,6 +36,32 @@ function persistAuth(value) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
 }
 
+function buildAuth(payload) {
+  const user = payload?.user
+
+  if (!payload?.token || !user) {
+    throw new Error('Authentication payload is incomplete.')
+  }
+
+  return {
+    token: payload.token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email ?? '',
+      phone: user.phone ?? '',
+      role: user.role ?? 'customer',
+      createdAt: user.createdAt,
+      profile: {
+        phone: user.profile?.phone ?? user.phone ?? '',
+        addressLine1: user.profile?.addressLine1 ?? '',
+        city: user.profile?.city ?? '',
+        postalCode: user.profile?.postalCode ?? '',
+      },
+    },
+  }
+}
+
 export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(() => loadAuth() ?? { token: null, user: null })
 
@@ -36,94 +69,49 @@ export function AuthProvider({ children }) {
   const token = auth.token
 
   // 🔐 REAL LOGIN (CONNECTED TO BACKEND)
-  const login = useCallback(async ({ email, password }) => {
-    try {
-      const res = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Login failed')
-      }
-
-      const nextUser = {
-        id: data._id,
-        name: data.name,
-        email: data.email,
-        role: data.email.toLowerCase().includes('admin') ? 'admin' : 'customer',
-        createdAt: new Date().toISOString(),
-        profile: {
-          phone: '',
-          addressLine1: '',
-          city: '',
-          postalCode: '',
-        },
-      }
-
-      const nextAuth = {
-        token: data.token,
-        user: nextUser,
-      }
-
-      setAuth(nextAuth)
-      persistAuth(nextAuth)
-
-      return nextAuth
-    } catch (error) {
-      throw error
-    }
+  const commitAuth = useCallback((payload) => {
+    const nextAuth = buildAuth(payload)
+    setAuth(nextAuth)
+    persistAuth(nextAuth)
+    return nextAuth
   }, [])
+
+  const login = useCallback(
+    async ({ email, password }) => {
+      const response = await loginRequest({ email, password })
+      return commitAuth(response)
+    },
+    [commitAuth]
+  )
 
   // 🔐 REGISTER (CONNECTED TO BACKEND)
-  const register = useCallback(async ({ name, email, password }) => {
-    try {
-      const res = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password }),
-      })
+  const register = useCallback(
+    async ({ name, email, password, phone }) => {
+      const response = await registerRequest({ name, email, password, phone })
+      return commitAuth(response)
+    },
+    [commitAuth]
+  )
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.message || 'Registration failed')
-      }
-
-      const nextUser = {
-        id: data._id,
-        name: data.name,
-        email: data.email,
-        role: 'customer',
-        createdAt: new Date().toISOString(),
-        profile: {
-          phone: '',
-          addressLine1: '',
-          city: '',
-          postalCode: '',
-        },
-      }
-
-      const nextAuth = {
-        token: data.token,
-        user: nextUser,
-      }
-
-      setAuth(nextAuth)
-      persistAuth(nextAuth)
-
-      return nextAuth
-    } catch (error) {
-      throw error
-    }
+  const requestPhoneOtp = useCallback(async ({ name, phone, mode }) => {
+    return requestPhoneOtpRequest({ name, phone, mode })
   }, [])
+
+  const verifyPhoneOtp = useCallback(
+    async ({ name, phone, otp, mode }) => {
+      const response = await verifyPhoneOtpRequest({ name, phone, otp, mode })
+      return commitAuth(response)
+    },
+    [commitAuth]
+  )
+
+  const loginWithGoogle = useCallback(
+    async ({ credential }) => {
+      const response = await authenticateWithGoogle({ credential })
+      return commitAuth(response)
+    },
+    [commitAuth]
+  )
 
   const logout = useCallback(() => {
     setAuth({ token: null, user: null })
@@ -133,10 +121,12 @@ export function AuthProvider({ children }) {
   const updateProfile = useCallback((patch) => {
     setAuth((prev) => {
       if (!prev?.user) return prev
+
       const next = {
         ...prev,
         user: {
           ...prev.user,
+          phone: patch.phone ?? prev.user.phone,
           profile: { ...(prev.user.profile ?? {}), ...patch },
         },
       }
@@ -153,10 +143,23 @@ export function AuthProvider({ children }) {
       isAdmin: user?.role === 'admin',
       login,
       register,
+      requestPhoneOtp,
+      verifyPhoneOtp,
+      loginWithGoogle,
       logout,
       updateProfile,
     }),
-    [token, user, login, register, logout, updateProfile]
+    [
+      token,
+      user,
+      login,
+      register,
+      requestPhoneOtp,
+      verifyPhoneOtp,
+      loginWithGoogle,
+      logout,
+      updateProfile,
+    ]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

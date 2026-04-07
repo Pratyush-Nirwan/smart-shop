@@ -1,0 +1,24 @@
+name: Split Repo
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  split:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+
+      - name: Split Frontend
+        run: |
+          git subtree split --prefix=frontend -b frontend-branch
+          git push https://x-access-token:${{ secrets.FRONTEND_REPO_TOKEN }}@github.com/USERNAME/frontend-repo.git frontend-branch:main --force
+
+      - name: Split Backend
+        run: |
+          git subtree split --prefix=backend -b backend-branch
+          git push https://x-access-token:${{ secrets.BACKEND_REPO_TOKEN }}@github.com/USERNAME/backend-repo.git backend-branch:main --force

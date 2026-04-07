@@ -7,6 +7,7 @@ import { Skeleton } from '../components/ui/Skeleton'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
 import { getProductById } from '../services/productService'
+import { formatInr } from '../utils/currency'
 
 function formatVariantLabel({ color, size }) {
   const parts = []
@@ -162,7 +163,7 @@ export default function ProductDetailsPage() {
             <div>
               <h1 className="text-3xl font-extrabold text-white">{product.name}</h1>
               <div className="mt-3 flex items-center gap-3">
-                <div className="text-2xl font-extrabold text-white">${product.price.toFixed(2)}</div>
+                <div className="text-2xl font-extrabold text-white">{formatInr(product.price)}</div>
                 <RatingStars rating={product.rating} size="lg" />
                 <span className="text-sm font-bold text-slate-400">{product.rating.toFixed(1)}</span>
               </div>

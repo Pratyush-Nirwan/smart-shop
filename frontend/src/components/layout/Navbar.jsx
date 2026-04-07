@@ -35,8 +35,8 @@ export default function Navbar() {
 
   function submitSearch(e) {
     e.preventDefault()
-    const q = search.trim()
-    navigate(`/products?query=${encodeURIComponent(q)}`)
+    const query = search.trim()
+    navigate(`/products?query=${encodeURIComponent(query)}`)
   }
 
   return (
@@ -49,14 +49,14 @@ export default function Navbar() {
             </span>
             <div className="leading-tight">
               <p className="text-sm font-extrabold tracking-tight text-slate-50">SmartShop</p>
-              <p className="text-xs text-slate-400">Full-Stack E-Commerce</p>
+              <p className="text-xs text-slate-400">Everyday essentials</p>
             </div>
           </Link>
         </div>
 
         <nav className="hidden items-center gap-1 md:flex">
           <NavItem to="/products">Shop</NavItem>
-          <NavItem to="/profile">Dashboard</NavItem>
+          <NavItem to="/profile">My Account</NavItem>
           {isAdmin ? <NavItem to="/admin">Admin</NavItem> : null}
         </nav>
 
@@ -98,7 +98,7 @@ export default function Navbar() {
           <div className="relative">
             <button
               type="button"
-              onClick={() => setOpenProfile((v) => !v)}
+              onClick={() => setOpenProfile((value) => !value)}
               className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 hover:bg-white/10"
             >
               <IconUser className="h-5 w-5" />
@@ -117,7 +117,7 @@ export default function Navbar() {
                         onClick={() => setOpenProfile(false)}
                         className="rounded-xl bg-white/5 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-white/10"
                       >
-                        Profile
+                        My Account
                       </Link>
                       {isAdmin ? (
                         <Link
@@ -158,7 +158,7 @@ export default function Navbar() {
                       Create account
                     </Link>
                     <p className="mt-2 text-xs text-slate-400">
-                      Tip: use email containing <span className="font-bold">admin</span> to enter the Admin dashboard.
+                      Sign in to track orders, save favorites, and checkout faster.
                     </p>
                   </div>
                 )}
@@ -170,4 +170,3 @@ export default function Navbar() {
     </header>
   )
 }
-

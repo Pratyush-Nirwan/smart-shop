@@ -1,8 +1,9 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
-export default function ProtectedRoute({ children, requireAdmin = false }) {
+export default function ProtectedRoute({ children, adminOnly = false, requireAdmin = false }) {
   const { isAuthenticated, isAdmin } = useAuth()
+  const needsAdmin = adminOnly || requireAdmin
 
   // ❌ Not logged in
   if (!isAuthenticated) {
@@ -10,7 +11,7 @@ export default function ProtectedRoute({ children, requireAdmin = false }) {
   }
 
   // ❌ Not admin (if required)
-  if (adminOnly && !isAdmin) {
+  if (needsAdmin && !isAdmin) {
     return <Navigate to="/" replace />
   }
 

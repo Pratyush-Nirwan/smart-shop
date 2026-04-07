@@ -8,23 +8,25 @@ export default function Footer() {
           <div>
             <p className="text-sm font-extrabold text-slate-50">SmartShop</p>
             <p className="mt-2 text-sm text-slate-400">
-              Real-time inventory & payments-ready UI built for a modern e-commerce flow.
+              Shop curated picks for home, tech, beauty, and everyday essentials.
             </p>
           </div>
+
           <div className="grid gap-2 text-sm">
             <Link to="/products" className="text-slate-300 hover:text-slate-50">
               Shop
             </Link>
             <Link to="/profile" className="text-slate-300 hover:text-slate-50">
-              Dashboard
+              My Account
             </Link>
-            <Link to="/admin" className="text-slate-300 hover:text-slate-50">
-              Admin
+            <Link to="/cart" className="text-slate-300 hover:text-slate-50">
+              Cart
             </Link>
           </div>
+
           <div className="grid gap-2 text-sm">
             <a className="text-slate-300 hover:text-slate-50" href="#">
-              Privacy Policy
+              Shipping & Returns
             </a>
             <a className="text-slate-300 hover:text-slate-50" href="#">
               Terms of Service
@@ -34,11 +36,11 @@ export default function Footer() {
             </a>
           </div>
         </div>
+
         <div className="mt-8 border-t border-white/10 pt-6 text-xs text-slate-500">
-          © {new Date().getFullYear()} SmartShop. All rights reserved.
+          Copyright {new Date().getFullYear()} SmartShop. All rights reserved.
         </div>
       </div>
     </footer>
   )
 }
-

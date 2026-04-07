@@ -6,8 +6,9 @@ import RatingStars from '../components/product/RatingStars'
 import { useCart } from '../context/CartContext'
 import { useToast } from '../context/ToastContext'
 import { IconCart } from '../components/common/Icons'
+import { formatInr } from '../utils/currency'
 
-export default function CartPage() {
+function CartPage() {
   const navigate = useNavigate()
   const { items, totals, updateQuantity, removeItem, applyCoupon, couponCode } = useCart()
   const { pushToast } = useToast()
@@ -15,15 +16,14 @@ export default function CartPage() {
   const [couponInput, setCouponInput] = useState(couponCode ?? '')
 
   const isEmpty = items.length === 0
-
   const canCheckout = !isEmpty
 
   const couponHint = useMemo(() => {
     const normalized = (couponInput ?? '').trim().toUpperCase()
-    if (!normalized) return 'Try SMART10 or FIRST15'
-    if (normalized === 'SMART10') return '10% off with SMART10'
-    if (normalized === 'FIRST15') return '15% off with FIRST15'
-    return 'Unknown code (demo) — still can apply for UI'
+    if (!normalized) return 'Try SMART10 or FIRST15 for extra savings.'
+    if (normalized === 'SMART10') return '10% off with SMART10.'
+    if (normalized === 'FIRST15') return '15% off with FIRST15.'
+    return 'That code is not available right now.'
   }, [couponInput])
 
   function onApplyCoupon() {
@@ -40,9 +40,9 @@ export default function CartPage() {
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-white">Your Cart</h1>
-          <p className="mt-2 text-sm text-slate-300">Review items, apply a coupon, then checkout.</p>
+          <p className="mt-2 text-sm text-slate-300">Review your items, apply a coupon, and continue to checkout.</p>
         </div>
-        <div className="hidden sm:flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2">
+        <div className="hidden items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 sm:flex">
           <IconCart className="h-5 w-5 text-slate-200" />
           <span className="text-sm font-bold text-slate-50">{items.length} items</span>
         </div>
@@ -60,36 +60,30 @@ export default function CartPage() {
             </div>
           ) : (
             <div className="grid gap-4">
-              {items.map((it) => (
-                <div key={it.cartKey} className="flex gap-4 rounded-2xl border border-white/10 bg-slate-950/20 p-3">
+              {items.map((item) => (
+                <div key={item.cartKey} className="flex gap-4 rounded-2xl border border-white/10 bg-slate-950/20 p-3">
                   <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-white/10">
-                    {it.image ? (
-                      <img src={it.image} alt={it.name} className="h-full w-full object-cover" />
-                    ) : null}
+                    {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : null}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-extrabold text-white">{it.name}</p>
-                        {it.variant?.color || it.variant?.size ? (
+                        <p className="truncate text-sm font-extrabold text-white">{item.name}</p>
+                        {item.variant?.color || item.variant?.size ? (
                           <p className="mt-1 text-xs text-slate-400">
-                            {it.variant.color ? it.variant.color : null}
-                            {it.variant.color && it.variant.size ? ' · ' : null}
-                            {it.variant.size ? it.variant.size : null}
+                            {item.variant.color ? item.variant.color : null}
+                            {item.variant.color && item.variant.size ? ' | ' : null}
+                            {item.variant.size ? item.variant.size : null}
                           </p>
                         ) : (
                           <p className="mt-1 text-xs text-slate-400">Default variant</p>
                         )}
                         <div className="mt-2 flex items-center gap-2">
-                          <div className="text-sm font-extrabold text-white">${it.price.toFixed(2)}</div>
+                          <div className="text-sm font-extrabold text-white">{formatInr(item.price)}</div>
                           <RatingStars rating={4.4} />
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeItem(it.cartKey)}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => removeItem(item.cartKey)}>
                         Remove
                       </Button>
                     </div>
@@ -98,7 +92,7 @@ export default function CartPage() {
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => updateQuantity(it.cartKey, it.quantity - 1)}
+                          onClick={() => updateQuantity(item.cartKey, item.quantity - 1)}
                           className="h-10 w-10 rounded-xl border border-white/10 bg-white/5 text-slate-100 hover:bg-white/10"
                         >
                           -
@@ -107,21 +101,21 @@ export default function CartPage() {
                           <input
                             type="number"
                             min="1"
-                            value={it.quantity}
-                            onChange={(e) => updateQuantity(it.cartKey, Number(e.target.value) || 1)}
+                            value={item.quantity}
+                            onChange={(e) => updateQuantity(item.cartKey, Number(e.target.value) || 1)}
                             className="h-10 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-center text-slate-100 outline-none transition focus:border-brand-400/70 focus:ring-2 focus:ring-brand-400/20"
                           />
                         </div>
                         <button
                           type="button"
-                          onClick={() => updateQuantity(it.cartKey, it.quantity + 1)}
+                          onClick={() => updateQuantity(item.cartKey, item.quantity + 1)}
                           className="h-10 w-10 rounded-xl border border-white/10 bg-white/5 text-slate-100 hover:bg-white/10"
                         >
                           +
                         </button>
                       </div>
                       <div className="text-sm font-extrabold text-white">
-                        Subtotal: ${(it.price * it.quantity).toFixed(2)}
+                        Subtotal: {formatInr(item.price * item.quantity)}
                       </div>
                     </div>
                   </div>
@@ -136,21 +130,21 @@ export default function CartPage() {
           <div className="mt-3 grid gap-3">
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-300">Subtotal</span>
-              <span className="font-extrabold text-white">${totals.subtotal.toFixed(2)}</span>
+              <span className="font-extrabold text-white">{formatInr(totals.subtotal)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-300">Discount</span>
-              <span className="font-extrabold text-white">-${totals.discount.toFixed(2)}</span>
+              <span className="font-extrabold text-white">-{formatInr(totals.discount)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-300">Shipping</span>
               <span className="font-extrabold text-white">
-                {totals.shipping === 0 ? 'Free' : `$${totals.shipping.toFixed(2)}`}
+                {totals.shipping === 0 ? 'Free' : formatInr(totals.shipping)}
               </span>
             </div>
             <div className="mt-2 flex items-center justify-between border-t border-white/10 pt-3">
-              <span className="text-slate-300 font-semibold">Total</span>
-              <span className="text-lg font-extrabold text-white">${totals.total.toFixed(2)}</span>
+              <span className="font-semibold text-slate-300">Total</span>
+              <span className="text-lg font-extrabold text-white">{formatInr(totals.total)}</span>
             </div>
 
             <div className="mt-3 border-t border-white/10 pt-4">
@@ -169,13 +163,8 @@ export default function CartPage() {
               </div>
             </div>
 
-            <Button
-              size="lg"
-              disabled={!canCheckout}
-              onClick={() => navigate('/checkout')}
-              className="mt-3"
-            >
-              Checkout
+            <Button size="lg" disabled={!canCheckout} onClick={() => navigate('/checkout')} className="mt-3">
+              Proceed to checkout
             </Button>
           </div>
         </aside>
@@ -184,3 +173,4 @@ export default function CartPage() {
   )
 }
 
+export default CartPage

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import ProductCard from '../components/product/ProductCard'
 import Button from '../components/ui/Button'
@@ -14,16 +14,16 @@ export default function ProductsPage() {
   const { pushToast } = useToast()
 
   const [searchParams] = useSearchParams()
+  const [categories, setCategories] = useState([])
 
- const [categories, setCategories] = useState([])
+  useEffect(() => {
+    async function loadCategories() {
+      const allCategories = await getAllCategories()
+      setCategories(allCategories)
+    }
 
-useEffect(() => {
-  async function loadCategories() {
-    const cats = await getAllCategories()
-    setCategories(cats)
-  }
-  loadCategories()
-}, [])
+    loadCategories()
+  }, [])
 
   const initialQuery = searchParams.get('query') ?? ''
   const initialCategory = searchParams.get('category') ?? 'All'
@@ -66,7 +66,6 @@ useEffect(() => {
     }
   }
 
-  // Reset results on filter change.
   useEffect(() => {
     setPage(1)
   }, [debouncedQuery, category, minPrice, maxPrice, minRating])
@@ -77,20 +76,19 @@ useEffect(() => {
   }, [page])
 
   useEffect(() => {
-    const el = sentinelRef.current
-    if (!el) return
-    if (!hasMore) return
-    if (loading) return
+    const element = sentinelRef.current
+    if (!element || !hasMore || loading) return
 
-    const io = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
         const first = entries[0]
-        if (first.isIntersecting && hasMore && !loading) setPage((p) => p + 1)
+        if (first.isIntersecting && hasMore && !loading) setPage((current) => current + 1)
       },
       { threshold: 0.1 }
     )
-    io.observe(el)
-    return () => io.disconnect()
+
+    observer.observe(element)
+    return () => observer.disconnect()
   }, [hasMore, loading])
 
   function handleAdd(product, variant) {
@@ -131,8 +129,8 @@ useEffect(() => {
             variant="ghost"
             size="sm"
             onClick={() => {
-              const q = query.trim()
-              navigate(`/products?query=${encodeURIComponent(q)}&category=${encodeURIComponent(category)}`)
+              const trimmedQuery = query.trim()
+              navigate(`/products?query=${encodeURIComponent(trimmedQuery)}&category=${encodeURIComponent(category)}`)
             }}
           >
             Share filters
@@ -150,7 +148,7 @@ useEffect(() => {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by name/category..."
+                placeholder="Search by name or category..."
                 className="h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-brand-400/70 focus:ring-2 focus:ring-brand-400/20"
               />
             </label>
@@ -162,9 +160,9 @@ useEffect(() => {
                 onChange={(e) => setCategory(e.target.value)}
                 className="h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-slate-100 outline-none transition focus:border-brand-400/70 focus:ring-2 focus:ring-brand-400/20"
               >
-                {categories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                {categories.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
                   </option>
                 ))}
               </select>
@@ -212,29 +210,27 @@ useEffect(() => {
               />
             </div>
 
-            <div className="text-xs text-slate-400">
-              Infinite scroll ready: we load the next page when you approach the bottom.
-            </div>
+            <div className="text-xs text-slate-400">More products load automatically as you keep browsing.</div>
           </div>
         </aside>
 
         <section>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {loading && items.length === 0
-              ? Array.from({ length: 9 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-card">
+              ? Array.from({ length: 9 }).map((_, index) => (
+                  <div key={index} className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-card">
                     <div className="aspect-square w-full animate-pulse rounded-xl bg-white/10" />
                     <div className="mt-3 h-5 w-4/5 animate-pulse rounded bg-white/10" />
                     <div className="mt-2 h-4 w-1/3 animate-pulse rounded bg-white/10" />
                   </div>
                 ))
-              : items.map((p) => (
+              : items.map((product) => (
                   <ProductCard
-                    key={p.id}
-                    product={p}
+                    key={product.id}
+                    product={product}
                     onAddToCart={handleAdd}
                     onToggleWishlist={(productId) => toggleWishlist(productId)}
-                    wishlisted={wishlist.includes(p.id)}
+                    wishlisted={wishlist.includes(product.id)}
                   />
                 ))}
           </div>
@@ -245,14 +241,14 @@ useEffect(() => {
             {loading ? (
               <div className="inline-flex items-center gap-2 text-slate-300">
                 <span className="h-2 w-2 animate-ping rounded-full bg-brand-400" />
-                Loading…
+                Loading...
               </div>
             ) : hasMore ? (
-              <Button onClick={() => setPage((p) => p + 1)} disabled={loading} variant="secondary">
+              <Button onClick={() => setPage((current) => current + 1)} disabled={loading} variant="secondary">
                 Load more
               </Button>
             ) : (
-              <p className="text-sm text-slate-400">You’ve reached the end.</p>
+              <p className="text-sm text-slate-400">No more products to show.</p>
             )}
           </div>
         </section>
@@ -260,4 +256,3 @@ useEffect(() => {
     </div>
   )
 }
-
