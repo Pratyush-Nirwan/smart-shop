@@ -14,14 +14,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Split Frontend
         run: |
           echo "Token present: ${{ secrets.FRONTEND_REPO_TOKEN != '' }}"
           git subtree split --prefix=frontend -b frontend-branch
-          git push https://x-access-token:${{ secrets.FRONTEND_REPO_TOKEN }}@github.com/Pratyush-Nirwan/smart-shop-fe.git frontend-branch:main --force
+          git remote add frontend https://x-access-token:${{ secrets.FRONTEND_REPO_TOKEN }}@github.com/Pratyush-Nirwan/smart-shop-fe.git
+          git push frontend frontend-branch:main --force
 
       - name: Split Backend
         run: |
           git subtree split --prefix=backend -b backend-branch
-          git push https://x-access-token:${{ secrets.BACKEND_REPO_TOKEN }}@github.com/Pratyush-Nirwan/smart-shop-be.git backend-branch:main --force   
+          git remote add backend https://x-access-token:${{ secrets.BACKEND_REPO_TOKEN }}@github.com/Pratyush-Nirwan/smart-shop-be.git
+          git push backend backend-branch:main --force  
