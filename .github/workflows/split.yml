@@ -2,8 +2,7 @@ name: Split Repo
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   split:
@@ -12,11 +11,11 @@ jobs:
     steps:
       - name: Checkout main repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Split Frontend
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
           git subtree split --prefix=frontend -b frontend-branch
           git push https://x-access-token:${{ secrets.FRONTEND_REPO_TOKEN }}@github.com/Pratyush-Nirwan/smart-shop-fe.git frontend-branch:main --force
 
