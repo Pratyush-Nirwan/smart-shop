@@ -17,6 +17,7 @@ jobs:
 
       - name: Split Frontend
         run: |
+          echo "Token present: ${{ secrets.FRONTEND_REPO_TOKEN != '' }}"
           git subtree split --prefix=frontend -b frontend-branch
           git push https://x-access-token:${{ secrets.FRONTEND_REPO_TOKEN }}@github.com/Pratyush-Nirwan/smart-shop-fe.git frontend-branch:main --force
 
