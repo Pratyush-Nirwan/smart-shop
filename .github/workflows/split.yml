@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   split:
     runs-on: ubuntu-latest
@@ -12,12 +15,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Split and Push Frontend
+      - name: Split Frontend
         run: |
           git subtree split --prefix=frontend -b frontend-branch
           git push https://x-access-token:${{ secrets.FRONTEND_REPO_TOKEN }}@github.com/Pratyush-Nirwan/smart-shop-fe.git frontend-branch:main --force
 
-      - name: Split and Push Backend
+      - name: Split Backend
         run: |
           git subtree split --prefix=backend -b backend-branch
           git push https://x-access-token:${{ secrets.BACKEND_REPO_TOKEN }}@github.com/Pratyush-Nirwan/smart-shop-be.git backend-branch:main --force   
